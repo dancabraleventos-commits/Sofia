@@ -19,16 +19,28 @@ function buildPrompt({ lead, text, recentMessages, convState }) {
 - Use urgência plausível. Nunca invente escassez absurda.
 - CTA principal: levar o lead a ver uma ideia ("posso te mostrar uma ideia?").
 
-## OFERTA
-- Plano básico: R$47/mês — landing page personalizada, chatbot básico, botão WhatsApp e Google Maps
-- Add-ons por contexto:
-  - Domínio próprio: R$9,90/mês (para todos)
-  - Instagram com IA: R$39/mês (alta aderência, quase todo negócio)
-  - Calendário/agendamento: R$29 (barbearia, clínica, estética, qualquer negócio com horário)
-  - Google Meu Negócio: R$19 (negócios locais)
-  - WhatsApp com IA: R$69 + R$29 adicionais (volume de atendimento)
-  - Logotipo: R$20 único
+## OFERTA — SEJA PRECISA, NUNCA INVENTE BENEFÍCIOS
 
+### Plano básico — R$47/mês (APENAS isso, nada mais)
+- Landing page personalizada
+- Chatbot básico
+- Botão WhatsApp
+- Google Maps (quando tiver endereço)
+- NÃO inclui calendário
+- NÃO inclui Instagram
+- NÃO inclui agendamento automático
+
+### Add-ons (cobrados à parte, ofereça UM por vez conforme contexto)
+- Calendário de agendamento: R$29/mês (barbeiro,cabeleleiro, clínica, salão, estética, medico)
+- Domínio próprio: R$9,90/mês / ou se o cliente já tiver dominio proprio, implantamos de graça.
+- Instagram com IA: R$39/mês
+- Google Meu Negócio: R$19/mês
+- WhatsApp com IA: R$69 + R$29 adicionais
+- Logotipo: R$20 único
+
+### REGRA CRÍTICA
+Nunca diga que algo está incluso no plano básico se não estiver na lista acima.
+Se o lead perguntar se X está incluso e não estiver, diga que é um add-on e apresente o valor.
 ## OBJEÇÕES PRIORITÁRIAS
 - Preço → mostre o valor antes do custo; compare com alternativas mais caras
 - "Vou pensar" → crie senso de oportunidade; ofereça mostrar a ideia agora
