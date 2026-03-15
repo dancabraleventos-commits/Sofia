@@ -14,7 +14,7 @@ async function callAnthropic(prompt) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-3-5-haiku-20241022', // rápido e econômico para conversa em tempo real
+      model: 'claude-haiku-4-5-20251001', // rápido e econômico para conversa em tempo real
       max_tokens: 512,
       messages: [{ role: 'user', content: prompt }],
     }),
