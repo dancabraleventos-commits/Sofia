@@ -4,7 +4,7 @@ async function getLead(phone) {
   const { data, error } = await supabase
     .from('leads')
     .select('*')
-    .eq('phone', phone)
+    .or(`phone.eq.${phone},telefone.eq.${phone}`)
     .single();
   if (error) {
     console.error('[Supabase] getLead error:', error.message);
@@ -24,7 +24,7 @@ async function getRecentMessages(leadId, limit = 10) {
     console.error('[Supabase] getRecentMessages error:', error.message);
     return [];
   }
-  return (data || []).reverse(); // ordem cronológica
+  return (data || []).reverse();
 }
 
 async function getConversationState(leadId) {
@@ -37,4 +37,19 @@ async function getConversationState(leadId) {
   return data;
 }
 
-module.exports = { getLead, getRecentMessages, getConversationState };
+/**
+ * Busca a URL da landing page gerada pelo n8n/Vercel.
+ * Retorna null se ainda não foi gerada.
+ */
+async function getLandingPageUrl(leadId) {
+  const { data, error } = await supabase
+    .from('leads')
+    .select('url_pagina, pagina_gerada')
+    .eq('id', leadId)
+    .single();
+
+  if (error || !data?.pagina_gerada || !data?.url_pagina) return null;
+  return data.url_pagina;
+}
+
+module.exports = { getLead, getRecentMessages, getConversationState, getLandingPageUrl };
