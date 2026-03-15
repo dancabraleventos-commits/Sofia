@@ -26,7 +26,8 @@ async function callAnthropic(prompt) {
   }
 
   const data = await response.json();
-  return data.content?.[0]?.text || '';
+  const text = data.content?.[0]?.text || '';
+return text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 }
 
 module.exports = { callAnthropic };
