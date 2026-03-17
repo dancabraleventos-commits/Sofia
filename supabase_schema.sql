@@ -46,8 +46,23 @@ CREATE TABLE IF NOT EXISTS conversation_state (
   updated_at        TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Tabela de add-ons contratados
+CREATE TABLE IF NOT EXISTS addons (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lead_id     UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+  type        TEXT NOT NULL,         -- plano_base | calendario | instagram | google | whatsapp_bot | dominio | logo
+  status      TEXT NOT NULL DEFAULT 'pending',  -- pending | active | cancelled | refunded
+  payment_id  TEXT UNIQUE,           -- ID do pagamento no Mercado Pago
+  valor       NUMERIC(10,2),
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Índices úteis
 CREATE INDEX IF NOT EXISTS idx_messages_lead_id   ON messages (lead_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_leads_phone        ON leads (phone);
 CREATE INDEX IF NOT EXISTS idx_leads_status       ON leads (status);
+CREATE INDEX IF NOT EXISTS idx_addons_lead_id     ON addons (lead_id);
+CREATE INDEX IF NOT EXISTS idx_addons_payment_id  ON addons (payment_id);
+CREATE INDEX IF NOT EXISTS idx_addons_status      ON addons (status);

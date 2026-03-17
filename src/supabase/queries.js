@@ -52,4 +52,44 @@ async function getLandingPageUrl(leadId) {
   return data.url_pagina;
 }
 
-module.exports = { getLead, getRecentMessages, getConversationState, getLandingPageUrl };
+async function getActiveAddonsByLeadId(leadId) {
+  const { data, error } = await supabase
+    .from('addons')
+    .select('*')
+    .eq('lead_id', leadId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.error('[Supabase] getActiveAddonsByLeadId error:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+async function getAddonByPaymentId(paymentId) {
+  const { data, error } = await supabase
+    .from('addons')
+    .select('*')
+    .eq('payment_id', paymentId)
+    .single();
+  if (error) {
+    console.error('[Supabase] getAddonByPaymentId error:', error.message);
+    return null;
+  }
+  return data;
+}
+
+async function getLeadById(leadId) {
+  const { data, error } = await supabase
+    .from('leads')
+    .select('*')
+    .eq('id', leadId)
+    .single();
+  if (error) {
+    console.error('[Supabase] getLeadById error:', error.message);
+    return null;
+  }
+  return data;
+}
+
+module.exports = { getLead, getRecentMessages, getConversationState, getLandingPageUrl, getAddonByPaymentId, getLeadById, getActiveAddonsByLeadId };

@@ -23,4 +23,37 @@ async function updateConversationState(leadId, state) {
   if (error) console.error('[Supabase] updateConversationState error:', error.message);
 }
 
-module.exports = { saveMessage, updateConversationState };
+async function createAddon({ lead_id, type, payment_id, valor }) {
+  const { error } = await supabase.from('addons').insert({
+    lead_id,
+    type,
+    payment_id,
+    valor,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+  if (error) console.error('[Supabase] createAddon error:', error.message);
+}
+
+async function updateAddonStatus(paymentId, status) {
+  const { error } = await supabase
+    .from('addons')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('payment_id', paymentId);
+  if (error) console.error('[Supabase] updateAddonStatus error:', error.message);
+}
+
+async function saveLandingPageUrl(leadId, url) {
+  const { error } = await supabase
+    .from('leads')
+    .update({
+      url_pagina: url,
+      pagina_gerada: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', leadId);
+  if (error) console.error('[Supabase] saveLandingPageUrl error:', error.message);
+}
+
+module.exports = { saveMessage, updateConversationState, saveLandingPageUrl, createAddon, updateAddonStatus };

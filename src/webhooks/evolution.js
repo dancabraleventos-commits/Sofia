@@ -2,6 +2,7 @@ const { getLead, getRecentMessages, getConversationState, getLandingPageUrl } = 
 const { saveMessage, updateConversationState } = require('../supabase/mutations');
 const { respondWithSofia } = require('../sofia/engine');
 const { sendWhatsAppMessage } = require('../evolution/client');
+const { triggerAddonWebhook } = require('../sofia/addons/n8n');
 
 const processedIds = new Set();
 
@@ -44,7 +45,7 @@ async function handleEvolutionWebhook(req, res) {
       raw_payload: payload,
     });
 
-    const { reply, newState, triggerLandingPage } = await respondWithSofia({
+    const { reply, newState, triggerLandingPage, triggerAddon } = await respondWithSofia({
       lead,
       text,
       recentMessages,
@@ -66,6 +67,11 @@ async function handleEvolutionWebhook(req, res) {
     // Aciona n8n para gerar landing page e aguarda a URL
     if (triggerLandingPage) {
       await triggerN8nLandingPage(lead, instanceName);
+    }
+
+    // Aciona n8n para provisionar o add-on vendido
+    if (triggerAddon) {
+      await triggerAddonWebhook(triggerAddon, lead);
     }
 
   } catch (err) {
