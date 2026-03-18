@@ -34,6 +34,31 @@ async function deployToVercel(html, leadId) {
 
   // 2. Cria o deployment referenciando o SHA do arquivo
   const deployName = `vitrineia-${leadId.substring(0, 8)}`;
+  const projectId = process.env.VERCEL_PROJECT_ID; // opcional, mas recomendado
+
+  const deployBody = {
+    name: deployName,
+    files: [
+      {
+        file: 'index.html',
+        sha: sha1,
+        size: fileSize,
+      },
+    ],
+    projectSettings: {
+      framework: null,
+      buildCommand: null,
+      installCommand: null,
+      outputDirectory: null,
+      rootDirectory: null,
+      devCommand: null,
+    },
+  };
+
+  // Se VERCEL_PROJECT_ID estiver configurado, vincula ao projeto existente
+  if (projectId) {
+    deployBody.project = projectId;
+  }
 
   const deployRes = await fetch('https://api.vercel.com/v13/deployments', {
     method: 'POST',
@@ -41,24 +66,7 @@ async function deployToVercel(html, leadId) {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      name: deployName,
-      files: [
-        {
-          file: 'index.html',
-          sha: sha1,
-          size: fileSize,
-        },
-      ],
-      projectSettings: {
-        framework: null,
-        buildCommand: null,
-        installCommand: null,
-        outputDirectory: null,
-        rootDirectory: null,
-        devCommand: null,
-      },
-    }),
+    body: JSON.stringify(deployBody),
   });
 
   if (!deployRes.ok) {
