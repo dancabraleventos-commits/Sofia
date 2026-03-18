@@ -1,6 +1,6 @@
 /**
  * Faz deploy de um HTML estático no Vercel via API.
- * Fluxo: upload do arquivo → criação do deployment → retorna URL.
+ * Fluxo: upload do arquivo → criação do deployment → polling READY → retorna URL.
  */
 const crypto = require('crypto');
 
@@ -34,7 +34,7 @@ async function deployToVercel(html, leadId) {
 
   // 2. Cria o deployment referenciando o SHA do arquivo
   const deployName = `vitrineia-${leadId.substring(0, 8)}`;
-  const projectId = process.env.VERCEL_PROJECT_ID; // opcional, mas recomendado
+  const projectId = process.env.VERCEL_PROJECT_ID;
 
   const deployBody = {
     name: deployName,
@@ -55,7 +55,6 @@ async function deployToVercel(html, leadId) {
     },
   };
 
-  // Se VERCEL_PROJECT_ID estiver configurado, vincula ao projeto existente
   if (projectId) {
     deployBody.project = projectId;
   }
@@ -76,11 +75,58 @@ async function deployToVercel(html, leadId) {
 
   const deploy = await deployRes.json();
 
-  if (!deploy.url) {
-    throw new Error(`[Vercel] Resposta sem URL: ${JSON.stringify(deploy)}`);
+  if (!deploy.url || !deploy.id) {
+    throw new Error(`[Vercel] Resposta sem URL ou ID: ${JSON.stringify(deploy)}`);
   }
 
-  return `https://${deploy.url}`;
+  // 3. Aguarda o deploy ficar READY antes de retornar a URL (timeout 120s)
+  const finalUrl = await waitForDeployReady(deploy.id, deploy.url, token);
+  return finalUrl;
+}
+
+/**
+ * Faz polling na API do Vercel até o deployment ficar READY.
+ * Estados possíveis: QUEUED → BUILDING → READY | ERROR | CANCELED
+ */
+async function waitForDeployReady(deployId, deployUrl, token, timeoutMs = 120000) {
+  const interval = 5000;
+  const maxAttempts = Math.floor(timeoutMs / interval);
+
+  for (let i = 0; i < maxAttempts; i++) {
+    await sleep(interval);
+
+    const statusRes = await fetch(`https://api.vercel.com/v13/deployments/${deployId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!statusRes.ok) {
+      console.warn(`[Vercel] Erro ao checar status do deploy: ${statusRes.status}`);
+      continue;
+    }
+
+    const status = await statusRes.json();
+    const state = status.readyState || status.state;
+
+    console.log(`[Vercel] Deploy status: ${state} (tentativa ${i + 1}/${maxAttempts})`);
+
+    if (state === 'READY') {
+      return `https://${deployUrl}`;
+    }
+
+    if (state === 'ERROR' || state === 'CANCELED') {
+      throw new Error(`[Vercel] Deploy falhou com estado: ${state}`);
+    }
+
+    // QUEUED ou BUILDING — continua aguardando
+  }
+
+  // Timeout: retorna a URL mesmo assim (Vercel geralmente finaliza em poucos segundos)
+  console.warn(`[Vercel] Timeout aguardando READY — retornando URL mesmo assim`);
+  return `https://${deployUrl}`;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 module.exports = { deployToVercel };
