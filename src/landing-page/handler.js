@@ -66,9 +66,22 @@ async function generateHtmlWithClaude({ nome, categoria, cidade, phone, endereco
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 32000,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
+      messages: [
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: promptBase, // instruções fixas longas
+          cache_control: { type: 'ephemeral' }
+        },
+        {
+          type: 'text',
+          text: `DADOS DO NEGÓCIO:\nNome: ${nome}\nCategoria: ${categoria}\nCidade: ${cidade}\nWhatsApp: ${phone}\nEndereço: ${endereco}`
+        }
+      ]
+    }
+  ]
+}),
 
   if (!response.ok) {
     const err = await response.text();
