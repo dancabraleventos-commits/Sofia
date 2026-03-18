@@ -64,24 +64,16 @@ async function generateHtmlWithClaude({ nome, categoria, cidade, phone, endereco
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 32000,
       messages: [
-      role: 'user',
-      content: [
         {
-          type: 'text',
-          text: promptBase, // instruções fixas longas
-          cache_control: { type: 'ephemeral' }
+          role: 'user',
+          content: prompt,
         },
-        {
-          type: 'text',
-          text: `DADOS DO NEGÓCIO:\nNome: ${nome}\nCategoria: ${categoria}\nCidade: ${cidade}\nWhatsApp: ${phone}\nEndereço: ${endereco}`
-        }
-      ]
-    }
-  ]
-}),
+      ],
+    }),
+  });
 
   if (!response.ok) {
     const err = await response.text();
