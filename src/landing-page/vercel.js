@@ -35,7 +35,7 @@ async function deployToVercel(html, leadId) {
   // 2. Cria o deployment referenciando o SHA do arquivo
   const deployName = `vitrineia-${leadId.substring(0, 8)}`;
 
-  const deployRes = await fetch('https://api.vercel.com/v13/deployments?skipAutoDetectionConfirmation=1', {
+  const deployRes = await fetch('https://api.vercel.com/v13/deployments', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -50,7 +50,14 @@ async function deployToVercel(html, leadId) {
           size: fileSize,
         },
       ],
-      target: 'production',
+      projectSettings: {
+        framework: null,
+        buildCommand: null,
+        installCommand: null,
+        outputDirectory: null,
+        rootDirectory: null,
+        devCommand: null,
+      },
     }),
   });
 
