@@ -6,10 +6,9 @@ const crypto = require('crypto');
 
 async function deployToVercel(html, leadId) {
   const token = process.env.VERCEL_TOKEN;
-  const projectId = process.env.VERCEL_PROJECT_ID;
 
-  if (!token || !projectId) {
-    throw new Error('[Vercel] VERCEL_TOKEN e VERCEL_PROJECT_ID são obrigatórios');
+  if (!token) {
+    throw new Error('[Vercel] VERCEL_TOKEN é obrigatório');
   }
 
   const htmlBuffer = Buffer.from(html, 'utf-8');
@@ -42,19 +41,16 @@ async function deployToVercel(html, leadId) {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-   body: JSON.stringify({
-  name: deployName,
-  files: [
-    {
-      file: 'index.html',
-      sha: sha1,
-      size: fileSize,
-    },
-  ],
-  target: 'production',
-}),
+    body: JSON.stringify({
+      name: deployName,
+      files: [
+        {
+          file: 'index.html',
+          sha: sha1,
+          size: fileSize,
         },
       ],
+      target: 'production',
     }),
   });
 
