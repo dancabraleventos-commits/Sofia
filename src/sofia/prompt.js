@@ -1,119 +1,115 @@
 /**
  * Prompt premium para geração de landing page HTML completa via Claude.
- * Gera uma página única com CSS embutido, otimizada para conversão.
- * Paletas e diretrizes visuais específicas por segmento.
+ * CSS base injetado diretamente — modelo não tem escolha visual.
  */
 
-// Paletas e personalidade visual por segmento
 const SEGMENTOS = {
   corretor: {
     match: ['corretor', 'imóvel', 'imovel', 'imobiliária', 'imobiliaria', 'permuta', 'apartamento', 'casa'],
-    cores: { primaria: '#0f2540', secundaria: '#c9a84c', acento: '#f5f0e8', texto: '#1a1a2e' },
-    fonte: 'Cormorant Garamond',
-    fonteBody: 'Jost',
-    estilo: 'luxury/refined — sofisticado, editorial, premium. Transmite confiança e exclusividade.',
-    hero_bg: 'linear-gradient(135deg, #0f2540 0%, #1a3c5e 60%, #0f2540 100%)',
-    emoji_setor: '🏡',
+    css: `
+      --cor-primaria: #0f2540;
+      --cor-secundaria: #c9a84c;
+      --cor-acento: #f5f0e8;
+      --cor-texto: #1a1a2e;
+      --hero-bg: linear-gradient(135deg, #0f2540 0%, #1a3c5e 60%, #0f2540 100%);
+      --fonte-display: 'Cormorant Garamond', serif;
+      --fonte-body: 'Jost', sans-serif;`,
+    fonts: 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Jost:wght@300;400;500;600&display=swap',
+    hero_text: 'Encontre o Imóvel Ideal',
+    cta: 'Quero Meu Imóvel Agora',
   },
   barbeiro: {
     match: ['barbeiro', 'barbearia', 'barba', 'cabelo masculino'],
-    cores: { primaria: '#1a1a1a', secundaria: '#d4af37', acento: '#f9f4e8', texto: '#111111' },
-    fonte: 'Bebas Neue',
-    fonteBody: 'DM Sans',
-    estilo: 'bold/industrial — masculino, forte, vintage moderno. Transmite habilidade e estilo.',
-    hero_bg: 'linear-gradient(160deg, #1a1a1a 0%, #2d2d2d 100%)',
-    emoji_setor: '✂️',
+    css: `
+      --cor-primaria: #1a1a1a;
+      --cor-secundaria: #d4af37;
+      --cor-acento: #f9f4e8;
+      --cor-texto: #111111;
+      --hero-bg: linear-gradient(160deg, #1a1a1a 0%, #2d2d2d 100%);
+      --fonte-display: 'Bebas Neue', cursive;
+      --fonte-body: 'DM Sans', sans-serif;`,
+    fonts: 'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap',
+    hero_text: 'O Melhor da Barbearia',
+    cta: 'Agendar Agora',
   },
   salao: {
     match: ['salão', 'salao', 'cabeleireiro', 'cabeleireira', 'beleza', 'estética', 'estetica', 'manicure', 'unhas'],
-    cores: { primaria: '#2d1b3d', secundaria: '#e8a4c8', acento: '#fdf6f9', texto: '#1a0a2e' },
-    fonte: 'Playfair Display',
-    fonteBody: 'Nunito',
-    estilo: 'elegante/feminino — sofisticado com toque floral. Transmite cuidado e feminilidade.',
-    hero_bg: 'linear-gradient(135deg, #2d1b3d 0%, #6b3fa0 100%)',
-    emoji_setor: '💅',
+    css: `
+      --cor-primaria: #2d1b3d;
+      --cor-secundaria: #e8a4c8;
+      --cor-acento: #fdf6f9;
+      --cor-texto: #1a0a2e;
+      --hero-bg: linear-gradient(135deg, #2d1b3d 0%, #6b3fa0 100%);
+      --fonte-display: 'Playfair Display', serif;
+      --fonte-body: 'Nunito', sans-serif;`,
+    fonts: 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Nunito:wght@300;400;600&display=swap',
+    hero_text: 'Sua Beleza em Mãos Especializadas',
+    cta: 'Agendar Horário',
   },
   clinica: {
     match: ['clínica', 'clinica', 'médico', 'medico', 'dentista', 'odonto', 'psicólogo', 'psicologo', 'fisio', 'saúde', 'saude', 'nutricionista'],
-    cores: { primaria: '#003d6b', secundaria: '#00b4d8', acento: '#f0f8ff', texto: '#0a2540' },
-    fonte: 'Outfit',
-    fonteBody: 'Source Sans 3',
-    estilo: 'clean/confiável — moderno, claro, transmite segurança e competência profissional.',
-    hero_bg: 'linear-gradient(135deg, #003d6b 0%, #0077b6 100%)',
-    emoji_setor: '🏥',
+    css: `
+      --cor-primaria: #003d6b;
+      --cor-secundaria: #00b4d8;
+      --cor-acento: #f0f8ff;
+      --cor-texto: #0a2540;
+      --hero-bg: linear-gradient(135deg, #003d6b 0%, #0077b6 100%);
+      --fonte-display: 'Outfit', sans-serif;
+      --fonte-body: 'Outfit', sans-serif;`,
+    fonts: 'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap',
+    hero_text: 'Sua Saúde em Boas Mãos',
+    cta: 'Agendar Consulta',
   },
   restaurante: {
     match: ['restaurante', 'lanchonete', 'pizzaria', 'hamburgueria', 'comida', 'culinária', 'culinaria', 'café', 'cafe', 'padaria', 'confeitaria'],
-    cores: { primaria: '#7b2d00', secundaria: '#e85d04', acento: '#fff8f0', texto: '#3d1400' },
-    fonte: 'Fraunces',
-    fonteBody: 'Karla',
-    estilo: 'apetitoso/acolhedor — quente, convidativo. Desperta apetite e sensação de conforto.',
-    hero_bg: 'linear-gradient(135deg, #7b2d00 0%, #c44d00 100%)',
-    emoji_setor: '🍽️',
-  },
-  advocacia: {
-    match: ['advogado', 'advogada', 'advocacia', 'jurídico', 'juridico', 'direito', 'escritório jurídico'],
-    cores: { primaria: '#1c2b4a', secundaria: '#8b6914', acento: '#f8f6f0', texto: '#0d1b2e' },
-    fonte: 'EB Garamond',
-    fonteBody: 'Inter',
-    estilo: 'formal/autoridade — sério, elegante, transmite credibilidade e competência.',
-    hero_bg: 'linear-gradient(160deg, #1c2b4a 0%, #2e4270 100%)',
-    emoji_setor: '⚖️',
-  },
-  contabilidade: {
-    match: ['contábil', 'contabil', 'contabilidade', 'contador', 'contadora', 'fiscal', 'tributário'],
-    cores: { primaria: '#14433d', secundaria: '#2ec4a3', acento: '#f0faf8', texto: '#0a2a26' },
-    fonte: 'Syne',
-    fonteBody: 'Mulish',
-    estilo: 'confiável/moderno — profissional, claro, transmite organização e segurança financeira.',
-    hero_bg: 'linear-gradient(135deg, #14433d 0%, #1a6b5e 100%)',
-    emoji_setor: '📊',
+    css: `
+      --cor-primaria: #7b2d00;
+      --cor-secundaria: #e85d04;
+      --cor-acento: #fff8f0;
+      --cor-texto: #3d1400;
+      --hero-bg: linear-gradient(135deg, #7b2d00 0%, #c44d00 100%);
+      --fonte-display: 'Fraunces', serif;
+      --fonte-body: 'Karla', sans-serif;`,
+    fonts: 'https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700&family=Karla:wght@400;500&display=swap',
+    hero_text: 'Sabor e Qualidade em Cada Detalhe',
+    cta: 'Fazer Pedido Agora',
   },
   academia: {
     match: ['academia', 'personal', 'crossfit', 'pilates', 'musculação', 'musculacao', 'fitness', 'treino'],
-    cores: { primaria: '#0d0d0d', secundaria: '#ff3d00', acento: '#fff5f3', texto: '#0d0d0d' },
-    fonte: 'Barlow Condensed',
-    fonteBody: 'Barlow',
-    estilo: 'energético/impactante — forte, dinâmico, motivacional. Transmite poder e resultados.',
-    hero_bg: 'linear-gradient(160deg, #0d0d0d 0%, #1a0800 100%)',
-    emoji_setor: '💪',
+    css: `
+      --cor-primaria: #0d0d0d;
+      --cor-secundaria: #ff3d00;
+      --cor-acento: #fff5f3;
+      --cor-texto: #0d0d0d;
+      --hero-bg: linear-gradient(160deg, #0d0d0d 0%, #1a0800 100%);
+      --fonte-display: 'Barlow Condensed', sans-serif;
+      --fonte-body: 'Barlow', sans-serif;`,
+    fonts: 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500&display=swap',
+    hero_text: 'Transforme Seu Corpo. Supere Seus Limites.',
+    cta: 'Começar Agora',
   },
-  pet: {
-    match: ['pet', 'veterinário', 'veterinario', 'animal', 'cachorro', 'gato', 'banho e tosa'],
-    cores: { primaria: '#1a4d6e', secundaria: '#f4a261', acento: '#fff8f0', texto: '#0d2d42' },
-    fonte: 'Nunito',
-    fonteBody: 'Nunito',
-    estilo: 'acolhedor/amigável — caloroso, alegre, transmite cuidado e amor pelos animais.',
-    hero_bg: 'linear-gradient(135deg, #1a4d6e 0%, #2980b9 100%)',
-    emoji_setor: '🐾',
+  default: {
+    css: `
+      --cor-primaria: #1a2e4a;
+      --cor-secundaria: #e67e22;
+      --cor-acento: #fafafa;
+      --cor-texto: #1a1a1a;
+      --hero-bg: linear-gradient(135deg, #1a2e4a 0%, #2e4a6e 100%);
+      --fonte-display: 'Plus Jakarta Sans', sans-serif;
+      --fonte-body: 'Plus Jakarta Sans', sans-serif;`,
+    fonts: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap',
+    hero_text: 'O Melhor Serviço para Você',
+    cta: 'Falar pelo WhatsApp',
   },
-  tecnologia: {
-    match: ['tech', 'tecnologia', 'software', 'desenvolvimento', 'app', 'ti ', 'informática', 'informatica', 'suporte'],
-    cores: { primaria: '#0a0a1a', secundaria: '#6c63ff', acento: '#f0f0ff', texto: '#0a0a1a' },
-    fonte: 'Space Grotesk',
-    fonteBody: 'Space Grotesk',
-    estilo: 'tech/futurista — moderno, digital, transmite inovação e competência técnica.',
-    hero_bg: 'linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%)',
-    emoji_setor: '💻',
-  },
-};
-
-const SEGMENTO_DEFAULT = {
-  cores: { primaria: '#1a2e4a', secundaria: '#e67e22', acento: '#fafafa', texto: '#1a1a1a' },
-  fonte: 'Plus Jakarta Sans',
-  fonteBody: 'Plus Jakarta Sans',
-  estilo: 'profissional/moderno — limpo, confiável, transmite competência e seriedade.',
-  hero_bg: 'linear-gradient(135deg, #1a2e4a 0%, #2e4a6e 100%)',
-  emoji_setor: '⭐',
 };
 
 function detectarSegmento(categoria) {
-  if (!categoria) return SEGMENTO_DEFAULT;
+  if (!categoria) return SEGMENTOS.default;
   const lower = categoria.toLowerCase();
   for (const [, seg] of Object.entries(SEGMENTOS)) {
-    if (seg.match.some(kw => lower.includes(kw))) return seg;
+    if (seg.match && seg.match.some(kw => lower.includes(kw))) return seg;
   }
-  return SEGMENTO_DEFAULT;
+  return SEGMENTOS.default;
 }
 
 function buildLandingPagePrompt({ nome, categoria, cidade, phone, endereco }) {
@@ -121,70 +117,91 @@ function buildLandingPagePrompt({ nome, categoria, cidade, phone, endereco }) {
   const phoneClean = phone.replace(/\D/g, '');
   const whatsappUrl = `https://wa.me/55${phoneClean}?text=Olá%2C%20vim%20pelo%20site%20e%20gostaria%20de%20mais%20informações`;
 
-  return `Você é um designer e copywriter sênior especializado em landing pages de alta conversão para negócios brasileiros. Seu trabalho é criar páginas que parecem ter custado R$5.000, não geradas por IA.
+  return `Você é um desenvolvedor frontend sênior. Gere uma landing page HTML completa para o seguinte negócio.
 
-## DADOS DO NEGÓCIO
+## DADOS
 - Nome: ${nome}
 - Segmento: ${categoria}
 - Cidade: ${cidade}
 - WhatsApp: ${phone}
-- Informações adicionais: ${endereco || 'não informado'}
+- Diferenciais: ${endereco || 'não informado'}
+- Link WhatsApp: ${whatsappUrl}
 
-## IDENTIDADE VISUAL OBRIGATÓRIA PARA ESTE SEGMENTO
-Estilo: ${seg.estilo}
-- Cor primária: ${seg.cores.primaria}
-- Cor secundária/acento dourado: ${seg.cores.secundaria}
-- Cor de fundo suave: ${seg.cores.acento}
-- Cor de texto: ${seg.cores.texto}
-- Hero background: ${seg.hero_bg}
-- Fonte display (títulos): ${seg.fonte} — importar do Google Fonts
-- Fonte body (texto): ${seg.fonteBody} — importar do Google Fonts
-- Emoji/ícone do setor: ${seg.emoji_setor}
+## CSS OBRIGATÓRIO — USE EXATAMENTE ESTAS VARIÁVEIS NO :root
+\`\`\`css
+:root {${seg.css}
+}
+\`\`\`
 
-## DIRETRIZES DE DESIGN — OBRIGATÓRIAS
-Você DEVE implementar todos estes elementos:
+## FONTE OBRIGATÓRIA — ESTE LINK EXATO NO <head>
+<link href="${seg.fonts}" rel="stylesheet">
 
-1. **Tipografia contrastante**: Títulos grandes e impactantes (3.5rem–5rem no desktop), linha de base ampla
-2. **Hero de alto impacto**: Fundo com o gradiente definido acima, texto branco, sem imagens externas
-3. **Cards com glassmorphism**: background: rgba(255,255,255,0.08), backdrop-filter: blur(10px), border: 1px solid rgba(255,255,255,0.15) — usar nas seções sobre fundo escuro
-4. **Linha decorativa**: Usar a cor secundária como acento (underline nos títulos, bordas left nos destaques, separadores)
-5. **Botão WhatsApp**: Verde #25d366 com ícone FontAwesome, border-radius: 50px, padding generoso, sombra colorida
-6. **Animações de entrada**: @keyframes fadeInUp com animation-delay escalonado nos cards (0.1s, 0.2s, 0.3s)
-7. **Seções alternadas**: Hero escuro → Benefícios claro → Diferenciais escuro (primária) → Depoimentos claro → CTA escuro
-8. **Footer elegante**: Fundo escuro com cor primária, logo/nome grande, contatos alinhados
+## ESTRUTURA HTML OBRIGATÓRIA
 
-## ESTRUTURA DA PÁGINA (nesta ordem exata)
-1. **Header fixo** — fundo primário semitransparente com blur, nome do negócio à esquerda, botão WhatsApp à direita
-2. **Hero** — headline impactante (resultado/transformação, não descrição), subheadline específica, 2 CTAs (WhatsApp + "Ver como funciona")
-3. **Benefícios** — 3 cards sobre fundo claro com ícone FontAwesome, título, descrição de 2 linhas. Específicos do segmento
-4. **Por que escolher** — fundo primário escuro, 4 diferenciais com ícone colorido na cor secundária, extraídos das informações adicionais
-5. **Depoimentos** — 3 cards com aspas decorativas grandes, nome e cidade do cliente (fictícios mas plausíveis)
-6. **CTA central** — fundo gradiente, headline de urgência, botão grande WhatsApp, subtext com cidade
-7. **Footer** — contato, CRECI se mencionado, cidade, copyright
+### 1. HEADER (position: sticky, top: 0, z-index: 100)
+- background: var(--cor-primaria)
+- Nome "${nome}" à esquerda em var(--fonte-display), cor: var(--cor-secundaria)
+- Botão "WhatsApp" à direita: background #25d366, border-radius 50px
 
-## COPYWRITING — REGRAS
-- Headline do Hero: foco em RESULTADO para o cliente, não em descrição do serviço. Ex: "Encontre o Imóvel Ideal em ${cidade} Sem Complicação" — nunca "Somos especialistas em..."
-- Use o nome "${nome}" em pelo menos 3 lugares estratégicos
-- Mencione "${cidade}" na headline e no CTA final
-- Extraia diferenciais REAIS das informações adicionais: "${endereco || ''}"
-- Urgência natural: "atendimento personalizado", "agenda limitada", "consulta gratuita" — nunca fake
-- Depoimentos: nomes brasileiros comuns, específicos ao segmento e cidade
-- CTA dos botões: verbos de ação + benefício. Ex: "Quero Meu Imóvel Agora", não "Clique aqui"
-- Link WhatsApp em TODOS os botões: ${whatsappUrl}
+### 2. HERO SECTION
+- background: var(--hero-bg) — USE ESTE GRADIENTE EXATO
+- min-height: 85vh, display flex, align-items center, text-align center
+- H1: font-family var(--fonte-display), font-size clamp(2.5rem, 6vw, 5rem), cor: #ffffff
+- Subheadline: extraída dos diferenciais "${endereco}", cor: rgba(255,255,255,0.85)
+- Botão CTA primário: background #25d366, padding 1rem 2.5rem, border-radius 50px, font-size 1.1rem
+- Headline deve mencionar "${cidade}" e focar em resultado para o cliente
 
-## REQUISITOS TÉCNICOS
-- HTML único autocontido, CSS embutido no <style>
-- Mobile-first, breakpoint principal em 768px
-- Google Fonts: @import das duas fontes definidas acima
-- Font Awesome 6 via CDN: https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css
-- Sem jQuery, sem frameworks externos de CSS
-- CSS variables no :root para todas as cores
-- Scroll behavior: smooth
-- Meta tags: viewport, description com nome e cidade, og:title
+### 3. BENEFÍCIOS (3 cards)
+- background: var(--cor-acento)
+- Cards: background #fff, border-radius 16px, box-shadow 0 4px 24px rgba(0,0,0,0.08)
+- Ícone Font Awesome: color var(--cor-secundaria), font-size 2.5rem
+- Título: font-family var(--fonte-display), color var(--cor-primaria)
+- Conteúdo específico para ${categoria}
+
+### 4. DIFERENCIAIS (sobre fundo escuro)
+- background: var(--cor-primaria)
+- Texto: #ffffff
+- 4 diferenciais extraídos de: "${endereco || categoria}"
+- Ícones Font Awesome: color var(--cor-secundaria)
+- Borda left nos itens: 3px solid var(--cor-secundaria)
+
+### 5. DEPOIMENTOS (3 cards)
+- background: var(--cor-acento)
+- Aspas decorativas grandes: color var(--cor-secundaria), font-size 4rem, opacity 0.3
+- Nome e cidade do cliente (fictícios, plausíveis para ${cidade})
+
+### 6. CTA FINAL
+- background: var(--hero-bg)
+- Headline de urgência mencionando ${cidade}
+- Botão WhatsApp grande: background #25d366
+
+### 7. FOOTER
+- background: var(--cor-primaria)
+- Cor texto: rgba(255,255,255,0.8)
+- Nome, cidade, contato, copyright
+
+## ANIMAÇÕES OBRIGATÓRIAS
+\`\`\`css
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.6s ease forwards; }
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+\`\`\`
+
+## OUTROS REQUISITOS TÉCNICOS
+- Font Awesome: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+- Mobile-first, breakpoint 768px
+- Scroll behavior smooth
+- Hover nos botões: filter brightness(1.1), transform translateY(-2px)
+- Hover nos cards: transform translateY(-4px), box-shadow maior
 
 ## FORMATO DE RESPOSTA
-Retorne APENAS o código HTML completo começando com <!DOCTYPE html> e terminando com </html>.
-Zero explicações. Zero markdown. Zero blocos de código. Apenas HTML puro pronto para publicar.`;
+Retorne APENAS o HTML completo começando com <!DOCTYPE html> e terminando com </html>.
+Sem explicações. Sem markdown. Sem blocos de código. HTML puro.`;
 }
 
 module.exports = { buildLandingPagePrompt };
