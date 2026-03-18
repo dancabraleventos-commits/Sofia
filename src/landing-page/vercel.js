@@ -42,14 +42,17 @@ async function deployToVercel(html, leadId) {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      name: deployName,
-      projectId,
-      files: [
-        {
-          file: 'index.html',
-          sha: sha1,
-          size: fileSize,
+   body: JSON.stringify({
+  name: deployName,
+  files: [
+    {
+      file: 'index.html',
+      sha: sha1,
+      size: fileSize,
+    },
+  ],
+  target: 'production',
+}),
         },
       ],
     }),
