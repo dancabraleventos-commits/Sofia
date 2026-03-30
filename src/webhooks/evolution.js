@@ -108,8 +108,23 @@ async function triggerN8nLandingPage(lead, instanceName) {
 
     if (url) {
       console.log(`[Sofia] URL recebida: ${url}`);
+
+      const nome = lead.nome || lead.name || '';
+      const msgUrl =
+        `Aqui está a página do *${nome}*! 🎉\n\n` +
+        `👉 ${url}\n\n` +
+        `Dá uma olhada e me fala o que achou! 😊`;
+
+      await sendWhatsAppMessage({ instanceName, phone: lead.phone || lead.telefone, message: msgUrl });
+      await saveMessage({ lead_id: lead.id, direction: 'outbound', text: msgUrl });
+
     } else {
       console.warn(`[Sofia] Timeout aguardando landing page para lead ${lead.id}`);
+
+      const msgTimeout =
+        `Estou finalizando sua página agora, em instantes te mando o link! 🚀`;
+      await sendWhatsAppMessage({ instanceName, phone: lead.phone || lead.telefone, message: msgTimeout });
+      await saveMessage({ lead_id: lead.id, direction: 'outbound', text: msgTimeout });
     }
 
   } catch (err) {
