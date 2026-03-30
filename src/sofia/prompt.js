@@ -49,9 +49,9 @@ Se o lead perguntar se X está incluso e não estiver, diga que é um add-on e a
 - "Não sei se preciso" → pergunte sobre o negócio e mostre o potencial
 
 ## DADOS DO LEAD
-- Nome: ${lead.name || 'Lead'}
-- Negócio: ${lead.business_type || 'não informado'}
-- Cidade: ${lead.city || 'não informada'}
+- Nome: ${lead.nome || lead.name || 'Lead'}
+- Negócio: ${lead.categoria || lead.business_type || 'não informado'}
+- Cidade: ${lead.cidade || lead.city || 'não informada'}
 - Score: ${lead.score || 0}
 - Estágio atual: ${stage}
 
