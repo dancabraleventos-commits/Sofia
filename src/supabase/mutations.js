@@ -56,4 +56,15 @@ async function saveLandingPageUrl(leadId, url) {
   if (error) console.error('[Supabase] saveLandingPageUrl error:', error.message);
 }
 
-module.exports = { saveMessage, updateConversationState, saveLandingPageUrl, createAddon, updateAddonStatus };
+async function markLeadResponded(leadId) {
+  const { error } = await supabase
+    .from('leads')
+    .update({
+      respondeu_whatsapp: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', leadId);
+  if (error) console.error('[Supabase] markLeadResponded error:', error.message);
+}
+
+module.exports = { saveMessage, updateConversationState, saveLandingPageUrl, createAddon, updateAddonStatus, markLeadResponded };
