@@ -1,10 +1,35 @@
 const { getLead, getRecentMessages, getConversationState, getLandingPageUrl } = require('../supabase/queries');
-const { saveMessage, updateConversationState } = require('../supabase/mutations');
+const { saveMessage, updateConversationState, markLeadResponded } = require('../supabase/mutations');
 const { respondWithSofia } = require('../sofia/engine');
 const { sendWhatsAppMessage } = require('../evolution/client');
 const { triggerAddonWebhook } = require('../sofia/addons/n8n');
 
 const processedIds = new Set();
+
+// Armazena o timestamp de quando enviamos o "Oi, tudo bem?" para cada telefone
+// Chave: phone, Valor: timestamp em ms
+const firstContactSentAt = new Map();
+
+/**
+ * Registra o momento em que o "Oi, tudo bem?" foi enviado para um número.
+ * Chamado pelo disparador do N8N via endpoint /webhooks/first-contact-sent
+ */
+function registerFirstContactSent(phone) {
+  firstContactSentAt.set(phone, Date.now());
+  // Limpa após 1 hora para não acumular memória
+  setTimeout(() => firstContactSentAt.delete(phone), 60 * 60 * 1000);
+}
+
+/**
+ * Verifica se a resposta chegou em menos de 10 segundos após o envio.
+ * Isso indica resposta automática de bot — deve ser ignorada.
+ */
+function isBotResponse(phone) {
+  const sentAt = firstContactSentAt.get(phone);
+  if (!sentAt) return false;
+  const elapsed = Date.now() - sentAt;
+  return elapsed < 10_000; // menos de 10 segundos
+}
 
 async function handleEvolutionWebhook(req, res) {
   res.status(200).json({ received: true });
@@ -23,6 +48,12 @@ async function handleEvolutionWebhook(req, res) {
     setTimeout(() => processedIds.delete(messageId), 60_000);
 
     const phone = payload.data.key.remoteJid.replace('@s.whatsapp.net', '');
+
+    // ── Filtro de bot: ignora respostas automáticas (< 10 segundos) ─────────
+    if (isBotResponse(phone)) {
+      console.log(`[Sofia] Resposta ignorada (bot detectado em < 10s): ${phone}`);
+      return;
+    }
     const text = payload.data.message.conversation;
     const instanceName = payload.instance;
 
@@ -30,6 +61,11 @@ async function handleEvolutionWebhook(req, res) {
     if (!lead) {
       console.warn(`[Sofia] Lead não encontrado para ${phone}`);
       return;
+    }
+
+    // Marca que o lead respondeu (cancela o follow-up de 3 dias)
+    if (!lead.respondeu_whatsapp) {
+      await markLeadResponded(lead.id);
     }
 
     const [recentMessages, convState] = await Promise.all([
@@ -153,4 +189,4 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-module.exports = { handleEvolutionWebhook };
+module.exports = { handleEvolutionWebhook, registerFirstContactSent };
