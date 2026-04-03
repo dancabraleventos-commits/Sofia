@@ -1,5 +1,5 @@
 const express = require('express');
-const { handleEvolutionWebhook } = require('./webhooks/evolution');
+const { handleEvolutionWebhook, registerFirstContactSent } = require('./webhooks/evolution');
 const { handleGerarLandingPage } = require('./landing-page/handler');
 const { handleCriarPagamento } = require('./mercadopago/handler');
 const { handleMercadoPagoWebhook } = require('./webhooks/mercadopago');
@@ -15,6 +15,17 @@ app.get('/health', (req, res) => {
 
 // Webhook principal da Evolution API
 app.post('/webhooks/evolution', handleEvolutionWebhook);
+
+// Notifica a Sofia que o "Oi, tudo bem?" foi enviado para um número.
+// Chamado pelo N8N logo após o disparo via Evolution API.
+// Body: { phone: "5512999990000" }
+app.post('/webhooks/first-contact-sent', (req, res) => {
+  const { phone } = req.body || {};
+  if (!phone) return res.status(400).json({ error: 'phone obrigatório' });
+  registerFirstContactSent(phone);
+  console.log(`[Sofia] Primeiro contato registrado para ${phone}`);
+  res.json({ ok: true });
+});
 
 // Geração e deploy de landing page para um lead
 app.post('/gerar-landing-page', handleGerarLandingPage);
