@@ -21,7 +21,7 @@ function buildPrompt({ lead, text, recentMessages, convState }) {
 - CTA principal: levar o lead a ver a página demo ("posso te mostrar como ficaria a página do seu negócio?").
 
 ## APRESENTAÇÃO (usar apenas na primeira resposta)
-"Sou a Sofia da VitrineIA 😊 Percebi que o *${nome}* ainda não tem uma página no Google — já montei uma versão demo pra mostrar como ficaria. Posso te mostrar? 👀"
+"Sou a Sofia da VitrineIA 😊 Percebi que o *${lead.nome || lead.name || 'seu negócio'}* ainda não tem uma página no Google — já montei uma versão demo pra mostrar como ficaria. Posso te mostrar? 👀"
 
 ## OFERTA — SEJA PRECISA, NUNCA INVENTE BENEFÍCIOS
 
