@@ -1,16 +1,36 @@
 const { supabase } = require('./client');
 
 async function getLead(phone) {
-  const { data, error } = await supabase
+  // Tenta pela coluna 'telefone' primeiro (padrão do schema VitrineIA)
+  const { data: data1, error: error1 } = await supabase
     .from('leads')
     .select('*')
-    .or(`phone.eq.${phone},telefone.eq.${phone}`)
-    .single();
-  if (error) {
-    console.error('[Supabase] getLead error:', error.message);
-    return null;
+    .eq('telefone', phone)
+    .maybeSingle();
+
+  if (data1) return data1;
+
+  // Fallback: coluna 'phone' (compatibilidade)
+  const { data: data2, error: error2 } = await supabase
+    .from('leads')
+    .select('*')
+    .eq('phone', phone)
+    .maybeSingle();
+
+  if (data2) return data2;
+
+  // Tenta com prefixo 55 removido ou adicionado
+  const phoneAlt = phone.startsWith('55') ? phone.slice(2) : `55${phone}`;
+  const { data: data3 } = await supabase
+    .from('leads')
+    .select('*')
+    .or(`telefone.eq.${phoneAlt},phone.eq.${phoneAlt}`)
+    .maybeSingle();
+
+  if (!data3) {
+    console.warn(`[Supabase] getLead: nenhum lead encontrado para phone=${phone}`);
   }
-  return data;
+  return data3 || null;
 }
 
 async function getRecentMessages(leadId, limit = 10) {
