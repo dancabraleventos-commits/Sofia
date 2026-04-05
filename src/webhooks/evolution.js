@@ -1,29 +1,20 @@
-const { getLead, getRecentMessages, getConversationState, getLandingPageUrl } = require('../supabase/queries');
+const { getLead, getRecentMessages, getConversationState } = require('../supabase/queries');
 const { saveMessage, updateConversationState, markLeadResponded } = require('../supabase/mutations');
 const { respondWithSofia } = require('../sofia/engine');
 const { sendWhatsAppMessage } = require('../evolution/client');
 const { triggerAddonWebhook } = require('../sofia/addons/n8n');
+const { handleGerarLandingPage } = require('../landing-page/handler');
 
 const processedIds = new Set();
 
 // Armazena o timestamp de quando enviamos o "Oi, tudo bem?" para cada telefone
-// Chave: phone, Valor: timestamp em ms
 const firstContactSentAt = new Map();
 
-/**
- * Registra o momento em que o "Oi, tudo bem?" foi enviado para um número.
- * Chamado pelo disparador do N8N via endpoint /webhooks/first-contact-sent
- */
 function registerFirstContactSent(phone) {
   firstContactSentAt.set(phone, Date.now());
-  // Limpa após 1 hora para não acumular memória
   setTimeout(() => firstContactSentAt.delete(phone), 60 * 60 * 1000);
 }
 
-/**
- * Verifica se a resposta chegou em menos de 10 segundos após o envio.
- * Isso indica resposta automática de bot — deve ser ignorada.
- */
 function isBotResponse(phone) {
   const sentAt = firstContactSentAt.get(phone);
   if (!sentAt) return false;
@@ -57,12 +48,12 @@ async function handleEvolutionWebhook(req, res) {
 
     const phone = payload.data.key.remoteJid.replace('@s.whatsapp.net', '');
 
-    // ── Filtro de bot: ignora respostas automáticas (< 3 segundos) ──────────
-    // Janela reduzida para 3s — 10s gerava falso-positivo em respostas rápidas
+    // Filtro de bot: ignora respostas automáticas (< 3 segundos)
     if (isBotResponse(phone)) {
       console.log(`[Sofia] Resposta ignorada (bot detectado em < 3s): ${phone}`);
       return;
     }
+
     const instanceName = payload.instance;
 
     const lead = await getLead(phone);
@@ -71,7 +62,6 @@ async function handleEvolutionWebhook(req, res) {
       return;
     }
 
-    // Marca que o lead respondeu (cancela o follow-up de 3 dias)
     if (!lead.respondeu_whatsapp) {
       await markLeadResponded(lead.id);
     }
@@ -108,9 +98,10 @@ async function handleEvolutionWebhook(req, res) {
 
     await updateConversationState(lead.id, newState);
 
-    // Aciona n8n para gerar landing page e aguarda a URL
+    // Aciona geração de landing page diretamente no Railway (fire-and-forget)
     if (triggerLandingPage) {
-      await triggerN8nLandingPage(lead, instanceName);
+      console.log(`[Sofia] Disparando geração de landing page para lead ${lead.id}`);
+      triggerLandingPageInternal(lead, instanceName);
     }
 
     // Aciona n8n para provisionar o add-on vendido
@@ -123,78 +114,33 @@ async function handleEvolutionWebhook(req, res) {
   }
 }
 
-async function triggerN8nLandingPage(lead, instanceName) {
-  const n8nUrl = process.env.N8N_LANDING_PAGE_WEBHOOK;
-  if (!n8nUrl) {
-    console.warn('[Sofia] N8N_LANDING_PAGE_WEBHOOK não configurada');
-    return;
-  }
-
-  try {
-    // Chama o n8n com os dados do lead
-    await fetch(n8nUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        lead_id: lead.id,
-        phone: lead.phone || lead.telefone,
-        nome: lead.nome || lead.name,
-        categoria: lead.categoria || lead.business_type,
-        cidade: lead.cidade || lead.city,
-        endereco: lead.endereco || '',
-      }),
-    });
-
-    console.log(`[Sofia] Landing page solicitada para lead ${lead.id}, aguardando Vercel...`);
-
-    // Aguarda o n8n gerar a página e salvar no Supabase (polling com timeout de 90s)
-    const url = await pollLandingPageUrl(lead.id, 90_000);
-
-    if (url) {
-      console.log(`[Sofia] URL recebida: ${url}`);
-
-      const nome = lead.nome || lead.name || '';
-      const msgUrl =
-        `Aqui está a página do *${nome}*! 🎉\n\n` +
-        `👉 ${url}\n\n` +
-        `Dá uma olhada e me fala o que achou! 😊`;
-
-      await sendWhatsAppMessage({ instanceName, phone: lead.phone || lead.telefone, message: msgUrl });
-      await saveMessage({ lead_id: lead.id, direction: 'outbound', text: msgUrl });
-
-    } else {
-      console.warn(`[Sofia] Timeout aguardando landing page para lead ${lead.id}`);
-
-      const msgTimeout =
-        `Estou finalizando sua página agora, em instantes te mando o link! 🚀`;
-      await sendWhatsAppMessage({ instanceName, phone: lead.phone || lead.telefone, message: msgTimeout });
-      await saveMessage({ lead_id: lead.id, direction: 'outbound', text: msgTimeout });
-    }
-
-  } catch (err) {
-    console.error('[Sofia] Erro ao acionar landing page:', err.message);
-  }
-}
-
 /**
- * Consulta o Supabase a cada 5 segundos até a URL aparecer ou o timeout estourar.
+ * Gera a landing page diretamente no Railway sem depender do N8N.
+ * Roda em background (fire-and-forget) para não bloquear o webhook.
+ * O próprio handler envia a URL via WhatsApp quando a página ficar pronta.
  */
-async function pollLandingPageUrl(leadId, timeoutMs = 90_000) {
-  const interval = 5_000;
-  const maxAttempts = Math.floor(timeoutMs / interval);
+function triggerLandingPageInternal(lead, instanceName) {
+  const phone = lead.telefone || lead.phone;
+  const nome = lead.nome || lead.name || '';
+  const categoria = lead.categoria || lead.business_type || 'outro';
+  const cidade = lead.cidade || lead.city || '';
+  const endereco = lead.endereco || '';
+  const lead_id = lead.id;
 
-  for (let i = 0; i < maxAttempts; i++) {
-    await sleep(interval);
-    const url = await getLandingPageUrl(leadId);
-    if (url) return url;
-    console.log(`[Sofia] Aguardando landing page... tentativa ${i + 1}/${maxAttempts}`);
-  }
+  // Monta um req/res falso para reutilizar o handler existente
+  const fakeReq = {
+    body: { phone, nome, categoria, cidade, endereco, lead_id },
+  };
 
-  return null;
-}
+  const fakeRes = {
+    status: () => fakeRes,
+    json: () => {},
+  };
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  // Chama o handler — ele responde imediatamente (202) e processa em background
+  handleGerarLandingPage(fakeReq, fakeRes).catch(err => {
+    console.error('[Sofia] Erro ao acionar landing page interna:', err.message);
+  });
 }
 
 module.exports = { handleEvolutionWebhook, registerFirstContactSent };
