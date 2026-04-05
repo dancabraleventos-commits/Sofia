@@ -4,6 +4,7 @@ const { handleGerarLandingPage } = require('./landing-page/handler');
 const { handleCriarPagamento } = require('./mercadopago/handler');
 const { handleMercadoPagoWebhook } = require('./webhooks/mercadopago');
 const { handleHandoffYasmin } = require('./handoff/yasmin');
+const { runReprocess } = require('./jobs/reprocess-unanswered');
 
 const app = express();
 app.use(express.json());
@@ -38,6 +39,19 @@ app.post('/webhooks/mercadopago', handleMercadoPagoWebhook);
 
 // Handoff para a Yasmin após pagamento confirmado
 app.post('/handoff/yasmin', handleHandoffYasmin);
+
+// Reprocessa leads que responderam mas não receberam resposta da Sofia.
+// Útil para recuperar conversas perdidas por bug ou downtime.
+app.post('/jobs/reprocess-unanswered', async (req, res) => {
+  console.log('[Sofia] Reprocessamento manual iniciado...');
+  res.json({ ok: true, message: 'Reprocessamento iniciado em background' });
+  try {
+    const result = await runReprocess();
+    console.log('[Sofia] Reprocessamento concluído:', result);
+  } catch (err) {
+    console.error('[Sofia] Erro no reprocessamento:', err.message);
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
