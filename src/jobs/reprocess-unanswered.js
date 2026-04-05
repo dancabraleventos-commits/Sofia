@@ -2,7 +2,7 @@
  * Reprocessador de leads que responderam mas não receberam resposta da Sofia.
  *
  * Lógica:
- * 1. Busca leads com mensagens inbound na tabela messages
+ * 1. Busca leads com mensagens inbound de ONTEM na tabela messages
  *    mas sem nenhuma mensagem outbound correspondente.
  * 2. Para cada um, pega a última mensagem do lead e reprocessa
  *    pela engine da Sofia exatamente como faria no webhook.
@@ -32,29 +32,59 @@ function sleep(ms) {
 }
 
 /**
- * Busca leads que têm mensagem inbound mas NENHUMA outbound.
- * Esses são os leads que responderam e ficaram sem retorno da Sofia.
+ * Retorna início e fim de ontem no fuso de Brasília (UTC-3).
+ */
+function getYesterdayRange() {
+  const now = new Date();
+
+  // Ontem 00:00:00 BRT = ontem 03:00:00 UTC
+  const start = new Date(now);
+  start.setUTCDate(start.getUTCDate() - 1);
+  start.setUTCHours(3, 0, 0, 0);
+
+  // Ontem 23:59:59 BRT = hoje 02:59:59 UTC
+  const end = new Date(now);
+  end.setUTCHours(2, 59, 59, 999);
+
+  return { start, end };
+}
+
+/**
+ * Busca leads que têm mensagem inbound de ONTEM mas NENHUMA outbound.
+ * Esses são os leads que responderam ontem e ficaram sem retorno da Sofia.
  */
 async function findUnansweredLeads() {
-  // Leads que têm pelo menos 1 mensagem inbound
+  const { start, end } = getYesterdayRange();
+
+  console.log(`[Reprocess] Buscando mensagens de ontem: ${start.toISOString()} até ${end.toISOString()}`);
+
+  // Leads que têm pelo menos 1 mensagem inbound de ontem
   const { data: leadsWithInbound, error: err1 } = await supabase
     .from('messages')
     .select('lead_id')
-    .eq('direction', 'inbound');
+    .eq('direction', 'inbound')
+    .gte('created_at', start.toISOString())
+    .lte('created_at', end.toISOString());
 
   if (err1) {
     console.error('[Reprocess] Erro buscando inbound:', err1.message);
     return [];
   }
 
-  const inboundLeadIds = [...new Set(leadsWithInbound.map(m => m.lead_id))];
-  if (inboundLeadIds.length === 0) return [];
+  const inboundLeadIds = [...new Set((leadsWithInbound || []).map(m => m.lead_id))];
+  if (inboundLeadIds.length === 0) {
+    console.log('[Reprocess] Nenhuma mensagem inbound encontrada ontem.');
+    return [];
+  }
 
-  // Leads que têm pelo menos 1 mensagem outbound
+  console.log(`[Reprocess] ${inboundLeadIds.length} leads responderam ontem.`);
+
+  // Leads que têm pelo menos 1 mensagem outbound (qualquer data)
   const { data: leadsWithOutbound, error: err2 } = await supabase
     .from('messages')
     .select('lead_id')
-    .eq('direction', 'outbound');
+    .eq('direction', 'outbound')
+    .in('lead_id', inboundLeadIds);
 
   if (err2) {
     console.error('[Reprocess] Erro buscando outbound:', err2.message);
@@ -63,11 +93,11 @@ async function findUnansweredLeads() {
 
   const outboundLeadIds = new Set((leadsWithOutbound || []).map(m => m.lead_id));
 
-  // Leads que têm inbound mas NÃO têm outbound = ficaram sem resposta
+  // Leads que responderam ontem mas nunca receberam resposta da Sofia
   const unansweredLeadIds = inboundLeadIds.filter(id => !outboundLeadIds.has(id));
 
   if (unansweredLeadIds.length === 0) {
-    console.log('[Reprocess] Nenhum lead sem resposta encontrado.');
+    console.log('[Reprocess] Todos os leads de ontem já foram respondidos.');
     return [];
   }
 
@@ -125,7 +155,6 @@ async function reprocessLead(lead) {
       getConversationState(lead.id),
     ]);
 
-    // Marca como respondeu se ainda não estava marcado
     if (!lead.respondeu_whatsapp) {
       await markLeadResponded(lead.id);
     }
@@ -160,7 +189,7 @@ async function reprocessLead(lead) {
     return true;
 
   } catch (err) {
-    console.error(`[Reprocess] ❌ Erro ao processar ${phone}:`, err.message);
+    console.error(`[Reprocess] Erro ao processar ${phone}:`, err.message);
     return false;
   }
 }
@@ -169,7 +198,7 @@ async function reprocessLead(lead) {
  * Função principal — roda o reprocessamento completo.
  */
 async function runReprocess() {
-  console.log('[Reprocess] Iniciando reprocessamento de leads sem resposta...');
+  console.log('[Reprocess] Iniciando reprocessamento de leads sem resposta (ontem)...');
 
   const leads = await findUnansweredLeads();
 
@@ -188,7 +217,6 @@ async function runReprocess() {
     if (ok) success++;
     else failed++;
 
-    // Aguarda entre envios para não causar ban no WhatsApp
     if (i < leads.length - 1) {
       await sleep(DELAY_BETWEEN_MS);
     }
