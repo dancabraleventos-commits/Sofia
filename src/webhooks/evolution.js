@@ -28,7 +28,7 @@ function isBotResponse(phone) {
   const sentAt = firstContactSentAt.get(phone);
   if (!sentAt) return false;
   const elapsed = Date.now() - sentAt;
-  return elapsed < 10_000; // menos de 10 segundos
+  return elapsed < 3_000; // menos de 3 segundos
 }
 
 async function handleEvolutionWebhook(req, res) {
@@ -37,7 +37,15 @@ async function handleEvolutionWebhook(req, res) {
   try {
     const payload = req.body;
 
-    if (!payload?.data?.message?.conversation) return;
+    // Extrai texto de conversation OU extendedTextMessage (Evolution pode usar ambos)
+    const rawMessage = payload?.data?.message;
+    const text =
+      rawMessage?.conversation ||
+      rawMessage?.extendedTextMessage?.text ||
+      rawMessage?.imageMessage?.caption ||
+      null;
+
+    if (!text) return;
     if (payload?.data?.key?.fromMe === true) return;
     if (payload?.data?.key?.remoteJid?.includes('@g.us')) return;
 
@@ -49,12 +57,12 @@ async function handleEvolutionWebhook(req, res) {
 
     const phone = payload.data.key.remoteJid.replace('@s.whatsapp.net', '');
 
-    // ── Filtro de bot: ignora respostas automáticas (< 10 segundos) ─────────
+    // ── Filtro de bot: ignora respostas automáticas (< 3 segundos) ──────────
+    // Janela reduzida para 3s — 10s gerava falso-positivo em respostas rápidas
     if (isBotResponse(phone)) {
-      console.log(`[Sofia] Resposta ignorada (bot detectado em < 10s): ${phone}`);
+      console.log(`[Sofia] Resposta ignorada (bot detectado em < 3s): ${phone}`);
       return;
     }
-    const text = payload.data.message.conversation;
     const instanceName = payload.instance;
 
     const lead = await getLead(phone);
