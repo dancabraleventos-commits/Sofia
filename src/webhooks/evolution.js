@@ -1,7 +1,10 @@
 const { getLead, getRecentMessages, getConversationState } = require('../supabase/queries');
 const { saveMessage, updateConversationState, markLeadResponded } = require('../supabase/mutations');
 const { respondWithSofia } = require('../sofia/engine');
-const { sendWhatsAppMessage } = require('../evolution/client');
+const { sendWhatsAppMessage, sendWhatsAppImage } = require('../evolution/client');
+
+// Foto da landing page demo — enviada após a apresentação da Sofia
+const DEMO_IMAGE_URL = 'https://xdcdpzuxoxbskloniwlu.supabase.co/storage/v1/object/public/assets/WhatsApp%20Image%202026-04-07%20at%2016.47.24.jpeg';
 const { triggerAddonWebhook } = require('../sofia/addons/n8n');
 const { handleGerarLandingPage } = require('../landing-page/handler');
 
@@ -89,6 +92,18 @@ async function handleEvolutionWebhook(req, res) {
     if (!reply) return;
 
     await sendWhatsAppMessage({ instanceName, phone, message: reply });
+
+    // Após a apresentação, envia a foto da demo automaticamente
+    if (newState?.stage === 'apresentada') {
+      await new Promise(r => setTimeout(r, 1500)); // pequena pausa natural
+      await sendWhatsAppImage({
+        instanceName,
+        phone,
+        imageUrl: DEMO_IMAGE_URL,
+        caption: 'Esse é um exemplo de como ficaria a página do seu negócio 😊',
+      });
+      await saveMessage({ lead_id: lead.id, direction: 'outbound', text: '[foto demo enviada]' });
+    }
 
     await saveMessage({
       lead_id: lead.id,
