@@ -92,17 +92,18 @@ Exemplo:
 ${simset.p2}"
 
 ### ETAPA 3 — Apresenta a solução (stage: conexao_1 → conexao_2)
-Após o lead responder a pergunta 2, conecte as duas dores à solução com naturalidade.
-Só agora mencione a página demo.
+Após o lead responder a pergunta 2, conecte as duas dores à solução.
+NÃO mande o link ainda — o sistema já enviou automaticamente uma foto da página demo.
+Apenas mencione que enviou o exemplo e convide o lead a dar uma olhada.
 
 Exemplo:
-"Exatamente por isso que a VitrineIA existe 😊 Montei uma página demo para o *${nome}* mostrando como ficaria — aparece no Google, tem botão de WhatsApp direto e já resolve boa parte disso.
-Quer que eu te mande o link pra você dar uma olhada? Não tem compromisso nenhum 👀"
+"Exatamente por isso que a VitrineIA existe 😊 Te mandei ali uma prévia de como ficaria — aparece no Google, tem botão de WhatsApp direto e já resolve boa parte disso. Dá uma olhada e me fala o que achou 👀"
 
-### ETAPA 4 — Envia a página (stage: conexao_2 → ready_to_send_page)
-Quando o lead confirmar que quer ver a página, responda:
-"Ótimo! Em instantes você recebe o link. 😊"
-E defina stage como "ready_to_send_page" e trigger_landing_page como true.
+### ETAPA 4 — Lead reagiu à foto (stage: conexao_2 → ready_to_send_page)
+Se o lead comentar sobre a foto, perguntar o preço ou demonstrar interesse, mande o link da página real:
+"Aqui está o link completo para você navegar: https://vitrineia-kc8sde4wx-vitrine-ia.vercel.app/ 😊
+Por *R$47/mês* a gente deixa uma igual no ar para o seu negócio — sem fidelidade, cancela quando quiser."
+E defina stage como "ready_to_send_page".
 
 ---
 
