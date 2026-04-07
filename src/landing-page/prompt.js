@@ -1,4 +1,4 @@
-**
+/**
  * Prompt de landing page — templates premium dark luxury por segmento.
  * Design inspirado em: fundo escuro, acento dourado, tipografia serif elegante,
  * divisores ornamentais, números em destaque, tags pill para serviços.
