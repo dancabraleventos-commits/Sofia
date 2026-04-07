@@ -1,22 +1,27 @@
 /**
- * Envia mensagem de texto via Evolution API.
+ * Envia mensagens via Evolution API.
+ * Suporta texto e imagem.
+ */
+
+const EVOLUTION_API_URL = () => process.env.EVOLUTION_API_URL;
+const EVOLUTION_API_KEY = () => process.env.EVOLUTION_API_KEY;
+
+function getHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    apikey: EVOLUTION_API_KEY(),
+  };
+}
+
+/**
+ * Envia mensagem de texto.
  */
 async function sendWhatsAppMessage({ instanceName, phone, message }) {
-  const baseUrl = process.env.EVOLUTION_API_URL;
-  const apiKey = process.env.EVOLUTION_API_KEY;
-
-  if (!baseUrl || !apiKey) {
-    throw new Error('[Evolution] EVOLUTION_API_URL e EVOLUTION_API_KEY são obrigatórias');
-  }
-
-  const url = `${baseUrl}/message/sendText/${instanceName}`;
+  const url = `${EVOLUTION_API_URL()}/message/sendText/${instanceName}`;
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: apiKey,
-    },
+    headers: getHeaders(),
     body: JSON.stringify({
       number: `${phone}@s.whatsapp.net`,
       text: message,
@@ -25,10 +30,37 @@ async function sendWhatsAppMessage({ instanceName, phone, message }) {
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`[Evolution] Erro ${response.status}: ${err}`);
+    throw new Error(`[Evolution] Erro texto ${response.status}: ${err}`);
   }
 
-  console.log(`[Evolution] Mensagem enviada para ${phone}`);
+  console.log(`[Evolution] Texto enviado para ${phone}`);
 }
 
-module.exports = { sendWhatsAppMessage };
+/**
+ * Envia imagem via URL pública.
+ * caption = legenda opcional abaixo da imagem.
+ */
+async function sendWhatsAppImage({ instanceName, phone, imageUrl, caption = '' }) {
+  const url = `${EVOLUTION_API_URL()}/message/sendMedia/${instanceName}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({
+      number: `${phone}@s.whatsapp.net`,
+      mediatype: 'image',
+      mimetype: 'image/jpeg',
+      media: imageUrl,
+      caption,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`[Evolution] Erro imagem ${response.status}: ${err}`);
+  }
+
+  console.log(`[Evolution] Imagem enviada para ${phone}`);
+}
+
+module.exports = { sendWhatsAppMessage, sendWhatsAppImage };
