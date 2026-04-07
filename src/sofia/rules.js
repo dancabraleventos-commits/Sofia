@@ -2,32 +2,43 @@
  * Respostas rápidas por regra para mensagens simples.
  * Evita chamar a IA desnecessariamente e reduz custo e latência.
  *
- * Retorna { text, newState } ou null se nenhuma regra se aplicar.
+ * Retorna { text, newState, triggerLandingPage } ou null se nenhuma regra se aplicar.
  */
 function applyRuleBasedReply({ text, convState }) {
   const normalized = text.trim().toLowerCase();
+  const stage = convState?.stage || 'initial';
 
-  // Confirmações simples — não precisa de IA
+  // Confirmações simples
   if (['sim', 's', 'ok', 'pode', 'claro', 'quero', 'manda'].includes(normalized)) {
-    return {
-      text: 'Ótimo! Me deixa te mostrar o que preparei. Em instantes você recebe o link da sua página.',
-      newState: { stage: 'ready_to_buy', last_intent: 'confirmação positiva' },
-    };
+
+    // Se o lead já viu as perguntas e está pronto para receber a página
+    if (stage === 'ready_to_send_page') {
+      return {
+        text: 'Ótimo! Em instantes você recebe o link da sua página. 😊',
+        newState: { stage: 'ready_to_buy', last_intent: 'confirmação positiva' },
+        triggerLandingPage: true, // ← FIX: agora dispara a página
+      };
+    }
+
+    // Se ainda está no fluxo consultivo, deixa a IA continuar o diálogo
+    return null;
   }
 
   // Negativas simples
   if (['não', 'nao', 'n', 'agora não', 'agora nao', 'depois'].includes(normalized)) {
     return {
-      text: 'Tudo bem! Só queria garantir que você soubesse da oportunidade. Se mudar de ideia, é só falar. 😊',
+      text: 'Tudo bem! Se mudar de ideia é só falar. 😊',
       newState: { stage: 'objection', last_intent: 'negativa momentânea' },
+      triggerLandingPage: false,
     };
   }
 
   // Agradecimentos
   if (['obrigado', 'obrigada', 'vlw', 'valeu', 'tmj'].includes(normalized)) {
     return {
-      text: 'Fico feliz em ajudar! Se quiser avançar com a presença digital do seu negócio, estou aqui.',
+      text: 'Fico feliz em ajudar! Se quiser avançar com a presença digital do seu negócio, estou aqui. 😊',
       newState: {},
+      triggerLandingPage: false,
     };
   }
 
