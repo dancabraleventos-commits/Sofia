@@ -1,16 +1,51 @@
 const { supabase } = require('./client');
 
 async function getLead(phone) {
-  const { data, error } = await supabase
+  // Tenta pela coluna 'telefone' primeiro (padrão do schema VitrineIA)
+  const { data: data1, error: error1 } = await supabase
+    .from('leads')
+    .select('*')
+    .eq('telefone', phone)
+    .maybeSingle();
+
+  if (data1) return data1;
+
+  // Fallback: coluna 'phone' (compatibilidade)
+  const { data: data2, error: error2 } = await supabase
     .from('leads')
     .select('*')
     .eq('phone', phone)
-    .single();
-  if (error) {
-    console.error('[Supabase] getLead error:', error.message);
-    return null;
+    .maybeSingle();
+
+  if (data2) return data2;
+
+  // Tenta com prefixo 55 removido ou adicionado
+  const phoneAlt = phone.startsWith('55') ? phone.slice(2) : `55${phone}`;
+  const { data: data3 } = await supabase
+    .from('leads')
+    .select('*')
+    .or(`telefone.eq.${phoneAlt},phone.eq.${phoneAlt}`)
+    .maybeSingle();
+
+  if (data3) return data3;
+
+  // Fallback: Evolution API às vezes omite o 9 do celular brasileiro
+  // Ex: 5531997841614 (com 9) ↔ 553197841614 (sem 9)
+  const phoneWith9 = phone.replace(/^(55\d{2})(\d{8})$/, '$19$2');
+  const phoneWithout9 = phone.replace(/^(55\d{2})9(\d{8})$/, '$1$2');
+
+  for (const alt of [phoneWith9, phoneWithout9]) {
+    if (alt === phone) continue;
+    const { data: data4 } = await supabase
+      .from('leads')
+      .select('*')
+      .or(`telefone.eq.${alt},phone.eq.${alt}`)
+      .maybeSingle();
+    if (data4) return data4;
   }
-  return data;
+
+  console.warn(`[Supabase] getLead: nenhum lead encontrado para phone=${phone}`);
+  return null;
 }
 
 async function getRecentMessages(leadId, limit = 10) {
@@ -24,7 +59,7 @@ async function getRecentMessages(leadId, limit = 10) {
     console.error('[Supabase] getRecentMessages error:', error.message);
     return [];
   }
-  return (data || []).reverse(); // ordem cronológica
+  return (data || []).reverse();
 }
 
 async function getConversationState(leadId) {
@@ -37,4 +72,59 @@ async function getConversationState(leadId) {
   return data;
 }
 
-module.exports = { getLead, getRecentMessages, getConversationState };
+/**
+ * Busca a URL da landing page gerada pelo n8n/Vercel.
+ * Retorna null se ainda não foi gerada.
+ */
+async function getLandingPageUrl(leadId) {
+  const { data, error } = await supabase
+    .from('leads')
+    .select('url_pagina, pagina_gerada')
+    .eq('id', leadId)
+    .single();
+
+  if (error || !data?.pagina_gerada || !data?.url_pagina) return null;
+  return data.url_pagina;
+}
+
+async function getActiveAddonsByLeadId(leadId) {
+  const { data, error } = await supabase
+    .from('addons')
+    .select('*')
+    .eq('lead_id', leadId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.error('[Supabase] getActiveAddonsByLeadId error:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+async function getAddonByPaymentId(paymentId) {
+  const { data, error } = await supabase
+    .from('addons')
+    .select('*')
+    .eq('payment_id', paymentId)
+    .single();
+  if (error) {
+    console.error('[Supabase] getAddonByPaymentId error:', error.message);
+    return null;
+  }
+  return data;
+}
+
+async function getLeadById(leadId) {
+  const { data, error } = await supabase
+    .from('leads')
+    .select('*')
+    .eq('id', leadId)
+    .single();
+  if (error) {
+    console.error('[Supabase] getLeadById error:', error.message);
+    return null;
+  }
+  return data;
+}
+
+module.exports = { getLead, getRecentMessages, getConversationState, getLandingPageUrl, getAddonByPaymentId, getLeadById, getActiveAddonsByLeadId };
