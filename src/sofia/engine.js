@@ -40,7 +40,7 @@ async function respondWithSofia({ lead, text, recentMessages, convState }) {
     return {
       reply: ruleReply.text,
       newState: ruleReply.newState,
-      triggerLandingPage: false,
+      triggerLandingPage: ruleReply.triggerLandingPage === true, // ← FIX
       triggerAddon: null,
     };
   }
